@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill; // Added this import
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/routes/route_manager.dart';
 import 'package:audioplayers/audioplayers.dart'; // Import audioplayers
+import 'package:note_taker/widgets/custom_todo_embed_builder.dart'; // Import CustomTodoEmbedBuilder
 
 class NotePreviewScreen extends StatefulWidget {
   final Note note;
@@ -168,12 +170,6 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {
-              // More options
-            },
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -219,7 +215,10 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                         scrollController: _scrollController,
                         configurations: QuillEditorConfigurations(
                           controller: _quillController!,
-                          embedBuilders: FlutterQuillEmbeds.editorBuilders(),
+                          embedBuilders: [
+                            ...FlutterQuillEmbeds.editorBuilders().where((builder) => builder.key != quill.Attribute.list.key),
+                            const CustomTodoEmbedBuilder(),
+                          ],
                           scrollable:
                               false, // Disable internal scrolling for QuillEditor
                         ),

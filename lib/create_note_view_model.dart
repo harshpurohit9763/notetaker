@@ -184,15 +184,8 @@ class CreateNoteViewModel extends ChangeNotifier {
 
   void saveNote(BuildContext context) {
     final title = _titleController.text;
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title cannot be empty'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // If title is empty, set a default or handle as needed.
+    // For now, we will allow empty titles as per user request.
 
     final noteProvider = Provider.of<NoteProvider>(context, listen: false);
 
@@ -258,10 +251,6 @@ class CreateNoteViewModel extends ChangeNotifier {
   void addTodoTemplate() {
     final todoDelta = Delta.fromJson([
       {
-        "insert": "Todays Todo\n",
-        "attributes": {"header": 1}
-      },
-      {
         "insert": "\n",
         "attributes": {"list": "checked", "checked": false}
       },
@@ -276,7 +265,7 @@ class CreateNoteViewModel extends ChangeNotifier {
     ]);
 
     final currentSelection = _quillController.selection;
-    _quillController.document.insert(currentSelection.baseOffset, todoDelta);
+    _quillController.compose(todoDelta, currentSelection, quill.ChangeSource.local);
     _quillController.updateSelection(
       TextSelection.collapsed(
           offset: currentSelection.baseOffset + todoDelta.length),

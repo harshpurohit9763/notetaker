@@ -5,6 +5,7 @@ import 'package:note_taker/create_note_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:note_taker/note_model.dart'; // Import Note model
+import 'package:note_taker/widgets/custom_todo_embed_builder.dart'; // Import CustomTodoEmbedBuilder
 
 extension ColorExtension on Color {
   String toHex({bool leadingHashSign = true}) => '${leadingHashSign ? '#' : ''}'
@@ -230,13 +231,6 @@ class CreateNoteScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.more_vert,
-                    color: Theme.of(context).iconTheme.color),
-                onPressed: () {
-                  // TODO: Implement more options
-                },
-              ),
             ],
           ),
         ],
@@ -290,7 +284,10 @@ class CreateNoteScreen extends StatelessWidget {
             ),
           ),
         ),
-        embedBuilders: FlutterQuillEmbeds.editorBuilders(),
+        embedBuilders: [
+                    ...FlutterQuillEmbeds.editorBuilders().where((builder) => builder.key != quill.Attribute.list.key),
+          const CustomTodoEmbedBuilder(),
+        ],
       ),
       focusNode: viewModel.quillFocusNode,
     );
@@ -398,12 +395,12 @@ class CreateNoteScreen extends StatelessWidget {
           _buildToolbarButton(Icons.image, const Color(0xFF0A84FF), () {
             viewModel.insertImage();
           }),
-          _buildToolbarButton(Icons.color_lens, const Color(0xFF0A84FF), () {
-            // TODO: Implement Change Color
-          }),
-          _buildToolbarButton(Icons.label, const Color(0xFF8E8E93), () {
-            // TODO: Implement Tag/Label
-          }),
+          // _buildToolbarButton(Icons.color_lens, const Color(0xFF0A84FF), () {
+          //   // TODO: Implement Change Color
+          // }),
+          // _buildToolbarButton(Icons.label, const Color(0xFF8E8E93), () {
+          //   // TODO: Implement Tag/Label
+          // }),
         ],
       ),
     );
