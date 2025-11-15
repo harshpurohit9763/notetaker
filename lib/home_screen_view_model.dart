@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/quill_delta.dart';
@@ -33,7 +34,7 @@ class HomeScreenViewModel extends ChangeNotifier {
               style: TextStyle(fontSize: 22, fontFamily: 'Inter'),
               children: [
                 TextSpan(
-                  text: 'Recorded ',
+                  text: 'Matterics ',
                   style: TextStyle(fontWeight: FontWeight.w300),
                 ),
                 TextSpan(
@@ -262,15 +263,44 @@ class HomeScreenViewModel extends ChangeNotifier {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
+              // Image preview or text content
               Expanded(
-                child: Text(
-                  note.noteType == 'text'
-                      ? _getPlainTextFromDelta(note.content)
-                      : 'Voice Note',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // Wrap the entire conditional content in Expanded
+                child: note.noteType == 'text'
+                    ? Builder(
+                        builder: (context) {
+                          final imageUrl =
+                              _getFirstImageUrlFromDelta(note.content);
+
+                          if (imageUrl != null && imageUrl.isNotEmpty) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                // Changed from Image.network to Image.file
+                                File(imageUrl), // Wrap imageUrl with File()
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.broken_image,
+                                        color: Colors.grey),
+                              ),
+                            );
+                          } else {
+                            return Text(
+                              _getPlainTextFromDelta(note.content),
+                              style: TextStyle(
+                                  color: Colors.grey[400], fontSize: 12),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }
+                        },
+                      )
+                    : Text(
+                        'Voice Note',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -313,7 +343,8 @@ class HomeScreenViewModel extends ChangeNotifier {
             top: -30,
             left: MediaQuery.of(context).size.width / 2 - 30,
             child: GestureDetector(
-              behavior: HitTestBehavior.opaque, // Ensure the entire area is tappable
+              behavior:
+                  HitTestBehavior.opaque, // Ensure the entire area is tappable
               onTap: () {
                 Navigator.push(
                   context,
@@ -368,6 +399,23 @@ class HomeScreenViewModel extends ChangeNotifier {
         ),
       ],
     );
+  }
+
+  String? _getFirstImageUrlFromDelta(String deltaJson) {
+    try {
+      final List<dynamic> jsonList = jsonDecode(deltaJson);
+      final Document document = Document.fromDelta(Delta.fromJson(jsonList));
+
+      for (final operation in document.toDelta().toList()) {
+        if (operation.data is Map &&
+            (operation.data as Map).containsKey('image')) {
+          return (operation.data as Map)['image'] as String;
+        }
+      }
+    } catch (e) {
+      print('Error parsing Delta JSON for image: $e');
+    }
+    return null;
   }
 
   String _getPlainTextFromDelta(String deltaJson) {

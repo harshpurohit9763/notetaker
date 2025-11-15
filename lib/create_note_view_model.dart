@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:note_taker/note_model.dart'; // Import Note model
+import 'package:image_picker/image_picker.dart'; // Import image_picker
 
 class CreateNoteViewModel extends ChangeNotifier {
   final _titleController = TextEditingController();
@@ -26,6 +27,8 @@ class CreateNoteViewModel extends ChangeNotifier {
 
   final FocusNode _titleFocusNode = FocusNode();
   final FocusNode _quillFocusNode = FocusNode();
+
+  final ImagePicker _imagePicker = ImagePicker(); // Image picker instance
 
   TextEditingController get titleController => _titleController;
   quill.QuillController get quillController => _quillController;
@@ -154,6 +157,28 @@ class CreateNoteViewModel extends ChangeNotifier {
     _isRecording = false;
     _isPaused = false;
     _audioPath = path;
+    notifyListeners();
+  }
+
+  Future<void> insertImage() async {
+    final XFile? image =
+        await _imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    // Get the current selection
+    final int index = _quillController.selection.baseOffset;
+    final int length = _quillController.selection.extentOffset - index;
+
+    // Insert the image embed block
+    _quillController.document.insert(index, quill.BlockEmbed.image(image.path));
+
+    // Move the cursor after the inserted image
+    _quillController.updateSelection(
+      TextSelection.collapsed(offset: index + 1),
+      quill.ChangeSource.local,
+    );
+
     notifyListeners();
   }
 

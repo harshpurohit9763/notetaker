@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/routes/route_manager.dart';
@@ -175,50 +176,52 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.note.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.note.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('MMM dd, yyyy')
-                      .format(widget.note.createdAt ?? DateTime.now()),
-                  style: const TextStyle(
-                    color: Color(0xFF8E8E93), // app-gray-text
-                    fontSize: 14,
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    DateFormat('MMM dd, yyyy')
+                        .format(widget.note.createdAt ?? DateTime.now()),
+                    style: const TextStyle(
+                      color: Color(0xFF8E8E93), // app-gray-text
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                Text(
-                  'Updated: ${DateFormat('MMM dd, yyyy').format(widget.note.lastUpdatedAt ?? DateTime.now())}',
-                  style: const TextStyle(
-                    color: Color(0xFF8E8E93), // app-gray-text
-                    fontSize: 14,
+                  Text(
+                    'Updated: ${DateFormat('MMM dd, yyyy').format(widget.note.lastUpdatedAt ?? DateTime.now())}',
+                    style: const TextStyle(
+                      color: Color(0xFF8E8E93), // app-gray-text
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: widget.note.noteType == 'text'
+                ],
+              ),
+              const SizedBox(height: 16),
+              widget.note.noteType == 'text'
                   ? AbsorbPointer(
                       child: QuillEditor(
                         focusNode: _focusNode,
                         scrollController: _scrollController,
-                        // padding: EdgeInsets.zero,
                         configurations: QuillEditorConfigurations(
                           controller: _quillController!,
+                          embedBuilders: FlutterQuillEmbeds.editorBuilders(),
+                          scrollable:
+                              false, // Disable internal scrolling for QuillEditor
                         ),
                       ),
                     )
@@ -306,8 +309,8 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                         ),
                       ],
                     ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

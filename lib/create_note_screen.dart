@@ -290,6 +290,7 @@ class CreateNoteScreen extends StatelessWidget {
             ),
           ),
         ),
+        embedBuilders: FlutterQuillEmbeds.editorBuilders(),
       ),
       focusNode: viewModel.quillFocusNode,
     );
@@ -306,7 +307,9 @@ class CreateNoteScreen extends StatelessWidget {
         if (viewModel.isPaused)
           const Text('Paused',
               style: TextStyle(color: Colors.orange, fontSize: 16)),
-        if (viewModel.audioPath != null && !viewModel.isRecording && !viewModel.isPaused)
+        if (viewModel.audioPath != null &&
+            !viewModel.isRecording &&
+            !viewModel.isPaused)
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -393,7 +396,7 @@ class CreateNoteScreen extends StatelessWidget {
           _buildToolbarButton(Icons.mic, const Color(0xFFFF9500),
               viewModel.toggleVoiceRecorder),
           _buildToolbarButton(Icons.image, const Color(0xFF0A84FF), () {
-            // TODO: Implement Add Image
+            viewModel.insertImage();
           }),
           _buildToolbarButton(Icons.color_lens, const Color(0xFF0A84FF), () {
             // TODO: Implement Change Color
