@@ -54,28 +54,36 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
 
   void _initAudioPlayer() {
     _audioPlayer.onPlayerStateChanged.listen((state) {
-      setState(() {
-        _isPlaying = state == PlayerState.playing;
-      });
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
     });
 
     _audioPlayer.onDurationChanged.listen((newDuration) {
-      setState(() {
-        _duration = newDuration;
-      });
+      if (mounted) {
+        setState(() {
+          _duration = newDuration;
+        });
+      }
     });
 
     _audioPlayer.onPositionChanged.listen((newPosition) {
-      setState(() {
-        _position = newPosition;
-      });
+      if (mounted) {
+        setState(() {
+          _position = newPosition;
+        });
+      }
     });
 
     _audioPlayer.onPlayerComplete.listen((event) {
-      setState(() {
-        _position = Duration.zero;
-        _isPlaying = false;
-      });
+      if (mounted) {
+        setState(() {
+          _position = Duration.zero;
+          _isPlaying = false;
+        });
+      }
     });
 
     // Load audio source
@@ -96,10 +104,12 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
 
   Future<void> _stopAudio() async {
     await _audioPlayer.stop();
-    setState(() {
-      _position = Duration.zero;
-      _isPlaying = false;
-    });
+    if (mounted) {
+      setState(() {
+        _position = Duration.zero;
+        _isPlaying = false;
+      });
+    }
   }
 
   Future<void> _seek(Duration position) async {

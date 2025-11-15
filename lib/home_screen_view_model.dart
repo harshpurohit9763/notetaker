@@ -313,6 +313,7 @@ class HomeScreenViewModel extends ChangeNotifier {
             top: -30,
             left: MediaQuery.of(context).size.width / 2 - 30,
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque, // Ensure the entire area is tappable
               onTap: () {
                 Navigator.push(
                   context,
