@@ -34,14 +34,7 @@ class NoteTakerApp extends StatelessWidget {
       title: ConstantManager.appName,
       theme: ThemeManager.darkTheme,
       initialRoute: RouteManager.homeScreen,
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case RouteManager.homeScreen:
-            return MaterialPageRoute(builder: (_) => const HomeScreen());
-          default:
-            return MaterialPageRoute(builder: (_) => const HomeScreen());
-        }
-      },
+      onGenerateRoute: RouteManager.generateRoute,
     );
   }
 }

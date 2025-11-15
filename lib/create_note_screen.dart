@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/create_note_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:note_taker/note_model.dart'; // Import Note model
 
 extension ColorExtension on Color {
   String toHex({bool leadingHashSign = true}) => '${leadingHashSign ? '#' : ''}'
@@ -16,12 +17,14 @@ class CreateNoteScreen extends StatelessWidget {
   final String? templateTitle;
   final String? templateContent;
   final String? templateNoteType;
+  final Note? note; // New optional parameter for editing
 
   const CreateNoteScreen({
     super.key,
     this.templateTitle,
     this.templateContent,
     this.templateNoteType,
+    this.note, // Initialize new parameter
   });
 
   @override
@@ -31,6 +34,7 @@ class CreateNoteScreen extends StatelessWidget {
         templateTitle: templateTitle,
         templateContent: templateContent,
         templateNoteType: templateNoteType,
+        note: note, // Pass the note to the ViewModel
       ),
       child: Consumer<CreateNoteViewModel>(
         builder: (context, viewModel, _) {

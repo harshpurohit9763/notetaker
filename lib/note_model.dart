@@ -18,4 +18,7 @@ class Note extends HiveObject {
 
   @HiveField(4)
   late String noteType; // "text" or "voice"
+
+  @HiveField(5)
+  late DateTime lastUpdatedAt;
 }

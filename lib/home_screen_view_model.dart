@@ -4,6 +4,7 @@ import 'package:note_taker/create_note_screen.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/note_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:note_taker/utils/route_manager.dart'; // Added import
 
 class HomeScreenViewModel extends ChangeNotifier {
   Widget buildTopBar() {
@@ -218,48 +219,57 @@ class HomeScreenViewModel extends ChangeNotifier {
           itemCount: noteProvider.notes.length,
           itemBuilder: (context, index) {
             final note = noteProvider.notes[index];
-            return buildNoteCard(note);
+            return buildNoteCard(context, note); // Pass context here
           },
         );
       },
     );
   }
 
-  Widget buildNoteCard(Note note) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            note.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              note.noteType == 'text' ? note.content : 'Voice Note',
-              style: TextStyle(color: Colors.grey[400], fontSize: 12),
-              maxLines: 3,
+  Widget buildNoteCard(BuildContext context, Note note) { // Added BuildContext
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          RouteManager.notePreviewScreen,
+          arguments: note,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151515),
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              note.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            DateFormat.yMMMd().format(note.createdAt),
-            style: TextStyle(color: Colors.grey[600], fontSize: 10),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Expanded(
+              child: Text(
+                note.noteType == 'text' ? note.content : 'Voice Note',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              DateFormat.yMMMd().format(note.createdAt),
+              style: TextStyle(color: Colors.grey[600], fontSize: 10),
+            ),
+          ],
+        ),
       ),
     );
   }

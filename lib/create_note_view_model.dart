@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/note_provider.dart';
+import 'package:note_taker/utils/route_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
+import 'package:note_taker/note_model.dart'; // Import Note model
 
 class CreateNoteViewModel extends ChangeNotifier {
   final _titleController = TextEditingController();
   late final quill.QuillController _quillController;
   String _noteType = 'text'; // 'text' or 'voice'
+  String? _noteId; // To store the ID of the note being edited
 
   final _audioRecorder = AudioRecorder();
   bool _isRecording = false;
@@ -35,34 +38,58 @@ class CreateNoteViewModel extends ChangeNotifier {
     String? templateTitle,
     String? templateContent,
     String? templateNoteType,
+    Note? note, // New optional parameter for editing
   }) {
-    if (templateTitle != null) {
-      _titleController.text = templateTitle;
-    }
-    if (templateContent != null && templateContent.isNotEmpty) {
-      try {
-        _quillController = quill.QuillController(
-          document: quill.Document.fromJson(
-            jsonDecode(templateContent),
-          ),
-          selection: const TextSelection.collapsed(offset: 0),
-        );
-      } on FormatException {
-        // Handle malformed JSON by initializing with a basic document
+    if (note != null) {
+      _noteId = note.id;
+      _titleController.text = note.title;
+      _noteType = note.noteType;
+      if (note.noteType == 'text') {
+        try {
+          _quillController = quill.QuillController(
+            document: quill.Document.fromJson(
+              jsonDecode(note.content),
+            ),
+            selection: const TextSelection.collapsed(offset: 0),
+          );
+        } on FormatException {
+          _quillController = quill.QuillController.basic();
+        }
+      } else {
         _quillController = quill.QuillController.basic();
+        _audioPath = note.content;
+        _showVoiceRecorder = true;
       }
     } else {
-      _quillController = quill.QuillController.basic();
+      // Existing template logic
+      if (templateTitle != null) {
+        _titleController.text = templateTitle;
+      }
+      if (templateContent != null && templateContent.isNotEmpty) {
+        try {
+          _quillController = quill.QuillController(
+            document: quill.Document.fromJson(
+              jsonDecode(templateContent),
+            ),
+            selection: const TextSelection.collapsed(offset: 0),
+          );
+        } on FormatException {
+          _quillController = quill.QuillController.basic();
+        }
+      } else {
+        _quillController = quill.QuillController.basic();
+      }
+      if (templateNoteType != null) {
+        _noteType = templateNoteType;
+        if (_noteType == 'voice') {
+          _showVoiceRecorder = true;
+        }
+      }
     }
+
     _quillController.addListener(() {
       notifyListeners();
     });
-    if (templateNoteType != null) {
-      _noteType = templateNoteType;
-      if (_noteType == 'voice') {
-        _showVoiceRecorder = true;
-      }
-    }
   }
 
   @override
@@ -132,7 +159,11 @@ class CreateNoteViewModel extends ChangeNotifier {
 
     if (_noteType == 'text') {
       final content = jsonEncode(_quillController.document.toDelta().toJson());
-      noteProvider.addTextNote(title, content);
+      if (_noteId != null) {
+        noteProvider.updateNote(_noteId!, title, content, _noteType);
+      } else {
+        noteProvider.addTextNote(title, content);
+      }
     } else {
       if (_audioPath == null && !_isRecording) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,15 +178,36 @@ class CreateNoteViewModel extends ChangeNotifier {
       if (_isRecording) {
         stopRecording().then((_) {
           if (_audioPath != null) {
-            noteProvider.addVoiceNote(title, _audioPath!);
+            if (_noteId != null) {
+              noteProvider.updateNote(_noteId!, title, _audioPath!, _noteType);
+            } else {
+              noteProvider.addVoiceNote(title, _audioPath!);
+            }
           }
         });
       } else {
-        noteProvider.addVoiceNote(title, _audioPath!);
+        if (_noteId != null) {
+          noteProvider.updateNote(_noteId!, title, _audioPath!, _noteType);
+        } else {
+          noteProvider.addVoiceNote(title, _audioPath!);
+        }
       }
     }
 
-    Navigator.pop(context);
+    if (_noteId != null) {
+      // If editing an existing note, navigate to home screen and remove all previous routes
+      Navigator.pushNamedAndRemoveUntil(
+          context, RouteManager.homeScreen, (route) => false);
+    } else {
+      // If creating a new note, pop back to the previous screen (likely home)
+      Navigator.pop(context);
+    }
+  }
+
+  void setNoteTypeToVoice() {
+    _noteType = 'voice';
+    _showVoiceRecorder = true;
+    notifyListeners();
   }
 
   void toggleVoiceRecorder() {

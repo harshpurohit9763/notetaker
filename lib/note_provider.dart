@@ -15,6 +15,7 @@ class NoteProvider with ChangeNotifier {
       ..title = title
       ..content = content
       ..createdAt = DateTime.now()
+      ..lastUpdatedAt = DateTime.now()
       ..noteType = 'text';
 
     await _notesBox.put(newNote.id, newNote);
@@ -27,10 +28,23 @@ class NoteProvider with ChangeNotifier {
       ..title = title
       ..content = audioPath
       ..createdAt = DateTime.now()
+      ..lastUpdatedAt = DateTime.now()
       ..noteType = 'voice';
 
     await _notesBox.put(newNote.id, newNote);
     notifyListeners();
+  }
+
+  Future<void> updateNote(String id, String title, String content, String noteType) async {
+    final existingNote = _notesBox.get(id);
+    if (existingNote != null) {
+      existingNote.title = title;
+      existingNote.content = content;
+      existingNote.noteType = noteType;
+      existingNote.lastUpdatedAt = DateTime.now();
+      await existingNote.save(); // Save changes to Hive
+      notifyListeners();
+    }
   }
 
   Future<void> deleteNote(String id) async {
