@@ -20,6 +20,7 @@ dependencies:
   flutter_quill: ^9.6.0
   flutter_quill_extensions: ^9.6.0
   flutter_colorpicker: ^1.0.0
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:

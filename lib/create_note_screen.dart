@@ -300,10 +300,13 @@ class CreateNoteScreen extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (viewModel.isRecording)
+        if (viewModel.isRecording && !viewModel.isPaused)
           const Text('Recording...',
               style: TextStyle(color: Colors.red, fontSize: 16)),
-        if (viewModel.audioPath != null && !viewModel.isRecording)
+        if (viewModel.isPaused)
+          const Text('Paused',
+              style: TextStyle(color: Colors.orange, fontSize: 16)),
+        if (viewModel.audioPath != null && !viewModel.isRecording && !viewModel.isPaused)
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -313,24 +316,58 @@ class CreateNoteScreen extends StatelessWidget {
             ],
           ),
         const SizedBox(height: 40),
-        GestureDetector(
-          onTap: viewModel.isRecording
-              ? viewModel.stopRecording
-              : viewModel.startRecording,
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  viewModel.isRecording ? Colors.red : const Color(0xFFFF9500),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Play/Pause/Record Button
+            GestureDetector(
+              onTap: () {
+                if (viewModel.isRecording && !viewModel.isPaused) {
+                  viewModel.pauseRecording();
+                } else if (viewModel.isPaused) {
+                  viewModel.startRecording();
+                } else {
+                  viewModel.startRecording();
+                }
+              },
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: viewModel.isRecording && !viewModel.isPaused
+                      ? Colors.red
+                      : const Color(0xFFFF9500),
+                ),
+                child: Icon(
+                  viewModel.isRecording && !viewModel.isPaused
+                      ? Icons.pause
+                      : Icons.mic,
+                  color: Theme.of(context).iconTheme.color,
+                  size: 50,
+                ),
+              ),
             ),
-            child: Icon(
-              viewModel.isRecording ? Icons.stop : Icons.mic,
-              color: Theme.of(context).iconTheme.color,
-              size: 50,
-            ),
-          ),
+            const SizedBox(width: 20),
+            // Stop Button
+            if (viewModel.isRecording || viewModel.isPaused)
+              GestureDetector(
+                onTap: viewModel.stopRecording,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey[700],
+                  ),
+                  child: Icon(
+                    Icons.stop,
+                    color: Theme.of(context).iconTheme.color,
+                    size: 40,
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );

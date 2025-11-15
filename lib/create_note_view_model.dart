@@ -21,6 +21,7 @@ class CreateNoteViewModel extends ChangeNotifier {
   bool _isRecording = false;
   String? _audioPath;
   bool _showVoiceRecorder = false;
+  bool _isPaused = false; // New state variable for pause/resume
   quill.Attribute? _lastAppliedAttribute;
 
   final FocusNode _titleFocusNode = FocusNode();
@@ -32,6 +33,7 @@ class CreateNoteViewModel extends ChangeNotifier {
   bool get isRecording => _isRecording;
   String? get audioPath => _audioPath;
   bool get showVoiceRecorder => _showVoiceRecorder;
+  bool get isPaused => _isPaused; // New getter for isPaused
   FocusNode get titleFocusNode => _titleFocusNode;
   FocusNode get quillFocusNode => _quillFocusNode;
 
@@ -125,21 +127,32 @@ class CreateNoteViewModel extends ChangeNotifier {
 
   Future<void> startRecording() async {
     if (await _audioRecorder.hasPermission()) {
-      final dir = await getApplicationDocumentsDirectory();
-      final path =
-          '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      if (_isPaused) {
+        await _audioRecorder.resume();
+        _isPaused = false;
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final path =
+            '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-      await _audioRecorder.start(const RecordConfig(), path: path);
-
+        await _audioRecorder.start(const RecordConfig(), path: path);
+        _audioPath = null; // Clear previous audio path on new recording
+      }
       _isRecording = true;
-      _audioPath = null;
       notifyListeners();
     }
+  }
+
+  Future<void> pauseRecording() async {
+    await _audioRecorder.pause();
+    _isPaused = true;
+    notifyListeners();
   }
 
   Future<void> stopRecording() async {
     final path = await _audioRecorder.stop();
     _isRecording = false;
+    _isPaused = false;
     _audioPath = path;
     notifyListeners();
   }
@@ -166,7 +179,7 @@ class CreateNoteViewModel extends ChangeNotifier {
         noteProvider.addTextNote(title, content);
       }
     } else {
-      if (_audioPath == null && !_isRecording) {
+      if (_audioPath == null && !_isRecording && !_isPaused) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please record a voice memo'),
@@ -175,8 +188,8 @@ class CreateNoteViewModel extends ChangeNotifier {
         );
         return;
       }
-      // If user is still recording, stop it before saving
-      if (_isRecording) {
+      // If user is still recording or paused, stop it before saving
+      if (_isRecording || _isPaused) {
         stopRecording().then((_) {
           if (_audioPath != null) {
             if (_noteId != null) {
