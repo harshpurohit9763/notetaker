@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/utils/route_manager.dart';
@@ -15,28 +15,34 @@ class NotePreviewScreen extends StatefulWidget {
 }
 
 class _NotePreviewScreenState extends State<NotePreviewScreen> {
-  quill.QuillController? _quillController;
+  QuillController? _quillController;
+  late FocusNode _focusNode;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
+    _scrollController = ScrollController();
     if (widget.note.noteType == 'text' && widget.note.content.isNotEmpty) {
       try {
-        _quillController = quill.QuillController(
-          document: quill.Document.fromJson(jsonDecode(widget.note.content)),
+        _quillController = QuillController(
+          document: Document.fromJson(jsonDecode(widget.note.content)),
           selection: const TextSelection.collapsed(offset: 0),
         );
       } catch (e) {
-        _quillController = quill.QuillController.basic();
+        _quillController = QuillController.basic();
       }
     } else {
-      _quillController = quill.QuillController.basic();
+      _quillController = QuillController.basic();
     }
   }
 
   @override
   void dispose() {
     _quillController?.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -99,14 +105,15 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat('MMM dd, yyyy').format(widget.note.createdAt),
+                  DateFormat('MMM dd, yyyy')
+                      .format(widget.note.createdAt ?? DateTime.now()),
                   style: const TextStyle(
                     color: Color(0xFF8E8E93), // app-gray-text
                     fontSize: 14,
                   ),
                 ),
                 Text(
-                  'Updated: ${DateFormat('MMM dd, yyyy').format(widget.note.lastUpdatedAt)}',
+                  'Updated: ${DateFormat('MMM dd, yyyy').format(widget.note.lastUpdatedAt ?? DateTime.now())}',
                   style: const TextStyle(
                     color: Color(0xFF8E8E93), // app-gray-text
                     fontSize: 14,
@@ -117,10 +124,14 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: widget.note.noteType == 'text'
-                  ? quill.QuillEditor.basic(
-                      configurations: quill.QuillEditorConfigurations(
-                        controller: _quillController!,
-                        // readOnly: true, // Set to read-only
+                  ? AbsorbPointer(
+                      child: QuillEditor(
+                        focusNode: _focusNode,
+                        scrollController: _scrollController,
+                        // padding: EdgeInsets.zero,
+                        configurations: QuillEditorConfigurations(
+                          controller: _quillController!,
+                        ),
                       ),
                     )
                   : Center(

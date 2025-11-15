@@ -20,14 +20,17 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..id = fields[0] as String
       ..title = fields[1] as String
       ..content = fields[2] as String
-      ..createdAt = fields[3] as DateTime
-      ..noteType = fields[4] as String;
+      ..createdAt = fields[3] as DateTime?
+      ..noteType = fields[4] as String
+      ..lastUpdatedAt = fields[5] as DateTime?
+      ..isArchived = fields[6] as bool?
+      ..isLocked = fields[7] as bool?;
   }
 
   @override
   void write(BinaryWriter writer, Note obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -37,7 +40,13 @@ class NoteAdapter extends TypeAdapter<Note> {
       ..writeByte(3)
       ..write(obj.createdAt)
       ..writeByte(4)
-      ..write(obj.noteType);
+      ..write(obj.noteType)
+      ..writeByte(5)
+      ..write(obj.lastUpdatedAt)
+      ..writeByte(6)
+      ..write(obj.isArchived)
+      ..writeByte(7)
+      ..write(obj.isLocked);
   }
 
   @override

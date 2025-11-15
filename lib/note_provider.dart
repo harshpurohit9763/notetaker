@@ -7,7 +7,8 @@ class NoteProvider with ChangeNotifier {
   final Box<Note> _notesBox = Hive.box<Note>('notes');
   final _uuid = Uuid();
 
-  List<Note> get notes => _notesBox.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  List<Note> get notes => _notesBox.values.toList()
+    ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
 
   Future<void> addTextNote(String title, String content) async {
     final newNote = Note()
@@ -35,7 +36,8 @@ class NoteProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateNote(String id, String title, String content, String noteType) async {
+  Future<void> updateNote(
+      String id, String title, String content, String noteType) async {
     final existingNote = _notesBox.get(id);
     if (existingNote != null) {
       existingNote.title = title;
@@ -50,5 +52,25 @@ class NoteProvider with ChangeNotifier {
   Future<void> deleteNote(String id) async {
     await _notesBox.delete(id);
     notifyListeners();
+  }
+
+  Future<void> archiveNote(String id, bool archive) async {
+    final existingNote = _notesBox.get(id);
+    if (existingNote != null) {
+      existingNote.isArchived = archive;
+      existingNote.lastUpdatedAt = DateTime.now(); // Update last updated time
+      await existingNote.save();
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleLockNote(String id) async {
+    final existingNote = _notesBox.get(id);
+    if (existingNote != null) {
+      existingNote.isLocked = !(existingNote.isLocked ?? false);
+      existingNote.lastUpdatedAt = DateTime.now(); // Update last updated time
+      await existingNote.save();
+      notifyListeners();
+    }
   }
 }

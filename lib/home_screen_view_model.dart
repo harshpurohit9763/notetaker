@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/create_note_screen.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/note_provider.dart';
+import 'package:note_taker/utils/route_manager.dart';
+import 'package:note_taker/widgets/note_action_modal.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
-import 'package:note_taker/utils/route_manager.dart'; // Added import
 
 class HomeScreenViewModel extends ChangeNotifier {
   Widget buildTopBar() {
@@ -70,7 +75,7 @@ class HomeScreenViewModel extends ChangeNotifier {
         children: [
           buildSegmentPill('Notes', isSelected: true),
           const SizedBox(width: 10),
-          buildSegmentPill('Calendar'),
+          buildSegmentPill('Draw'),
         ],
       ),
     );
@@ -84,9 +89,8 @@ class HomeScreenViewModel extends ChangeNotifier {
             ? Colors.white.withOpacity(0.15)
             : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: isSelected
-            ? Border.all(color: Colors.blue.withOpacity(0.5))
-            : null,
+        border:
+            isSelected ? Border.all(color: Colors.blue.withOpacity(0.5)) : null,
         boxShadow: isSelected
             ? [
                 BoxShadow(
@@ -114,21 +118,24 @@ class HomeScreenViewModel extends ChangeNotifier {
         content: 'Attendees:\n\nAgenda:\n\nAction Items:\n',
         noteType: 'text',
         icon: Icons.group,
-        gradient: const LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+        gradient:
+            const LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
       ),
       NoteTemplate(
         title: 'Quick Memo',
         content: '', // No content for a voice memo template
         noteType: 'voice',
         icon: Icons.mic,
-        gradient: const LinearGradient(colors: [Colors.orange, Colors.deepOrangeAccent]),
+        gradient: const LinearGradient(
+            colors: [Colors.orange, Colors.deepOrangeAccent]),
       ),
       NoteTemplate(
         title: 'To-Do List',
         content: '- [ ] \n- [ ] \n- [ ] \n',
         noteType: 'text',
         icon: Icons.check_box,
-        gradient: const LinearGradient(colors: [Colors.green, Colors.lightGreenAccent]),
+        gradient: const LinearGradient(
+            colors: [Colors.green, Colors.lightGreenAccent]),
       ),
       NoteTemplate(
         title: 'Simple Note',
@@ -146,7 +153,8 @@ class HomeScreenViewModel extends ChangeNotifier {
           padding: EdgeInsets.only(left: 20.0, top: 10.0),
           child: Text(
             'Start with a template',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
         SizedBox(
@@ -184,7 +192,8 @@ class HomeScreenViewModel extends ChangeNotifier {
                       const SizedBox(height: 8),
                       Text(
                         template.title,
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -226,13 +235,25 @@ class HomeScreenViewModel extends ChangeNotifier {
     );
   }
 
-  Widget buildNoteCard(BuildContext context, Note note) { // Added BuildContext
+  Widget buildNoteCard(BuildContext context, Note note) {
+    // Added BuildContext
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
           context,
           RouteManager.notePreviewScreen,
           arguments: note,
+        );
+      },
+      onLongPress: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return NoteActionModal(
+              note: note,
+              onDismiss: () => Navigator.pop(context),
+            );
+          },
         );
       },
       child: Container(
@@ -257,7 +278,7 @@ class HomeScreenViewModel extends ChangeNotifier {
             const SizedBox(height: 8),
             Expanded(
               child: Text(
-                note.noteType == 'text' ? note.content : 'Voice Note',
+                note.noteType == 'text' ? (note.content) : 'Voice Note',
                 style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -265,7 +286,7 @@ class HomeScreenViewModel extends ChangeNotifier {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat.yMMMd().format(note.createdAt),
+              DateFormat.yMMMd().format(note.lastUpdatedAt ?? note.createdAt ?? DateTime.now()),
               style: TextStyle(color: Colors.grey[600], fontSize: 10),
             ),
           ],
@@ -339,11 +360,9 @@ class HomeScreenViewModel extends ChangeNotifier {
 
   Widget buildNavBarItem(
     IconData icon,
-    String label,
-    {
+    String label, {
     bool isSelected = false,
-  }
-  ) {
+  }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -358,6 +377,18 @@ class HomeScreenViewModel extends ChangeNotifier {
         ),
       ],
     );
+  }
+
+  String _getPlainTextFromDelta(String deltaJson) {
+    try {
+      final List<dynamic> jsonList = jsonDecode(deltaJson);
+      final Document document = Document.fromDelta(Delta.fromJson(jsonList));
+      return document.toPlainText().trim();
+    } catch (e) {
+      // Handle parsing errors, e.g., if the content is not valid Delta JSON
+      print('Error parsing Delta JSON in HomeScreenViewModel: $e');
+      return deltaJson; // Return original content if parsing fails
+    }
   }
 }
 

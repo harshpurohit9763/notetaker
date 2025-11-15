@@ -351,7 +351,7 @@ class CreateNoteScreen extends StatelessWidget {
         children: [
           _buildToolbarButton(
               Icons.check_box_outline_blank, const Color(0xFF34C759), () {
-            // TODO: Implement To-Do List
+            viewModel.addTodoTemplate();
           }),
           _buildToolbarButton(Icons.mic, const Color(0xFFFF9500),
               viewModel.toggleVoiceRecorder),

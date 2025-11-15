@@ -14,11 +14,17 @@ class Note extends HiveObject {
   late String content;
 
   @HiveField(3)
-  late DateTime createdAt;
+  late DateTime? createdAt;
 
   @HiveField(4)
   late String noteType; // "text" or "voice"
 
   @HiveField(5)
-  late DateTime lastUpdatedAt;
+  late DateTime? lastUpdatedAt;
+
+  @HiveField(6)
+  late bool? isArchived = false;
+
+  @HiveField(7)
+  late bool? isLocked = false;
 }

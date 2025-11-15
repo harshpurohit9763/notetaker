@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/note_provider.dart';
@@ -214,5 +215,34 @@ class CreateNoteViewModel extends ChangeNotifier {
     _showVoiceRecorder = !_showVoiceRecorder;
     _noteType = _showVoiceRecorder ? 'voice' : 'text';
     notifyListeners();
+  }
+
+  void addTodoTemplate() {
+    final todoDelta = Delta.fromJson([
+      {
+        "insert": "Todays Todo\n",
+        "attributes": {"header": 1}
+      },
+      {
+        "insert": "\n",
+        "attributes": {"list": "checked", "checked": false}
+      },
+      {
+        "insert": "\n",
+        "attributes": {"list": "checked", "checked": false}
+      },
+      {
+        "insert": "\n",
+        "attributes": {"list": "checked", "checked": false}
+      }
+    ]);
+
+    final currentSelection = _quillController.selection;
+    _quillController.document.insert(currentSelection.baseOffset, todoDelta);
+    _quillController.updateSelection(
+      TextSelection.collapsed(
+          offset: currentSelection.baseOffset + todoDelta.length),
+      quill.ChangeSource.local,
+    );
   }
 }
