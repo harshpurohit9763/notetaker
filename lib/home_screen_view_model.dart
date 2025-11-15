@@ -118,7 +118,6 @@ class HomeScreenViewModel extends ChangeNotifier {
       NoteTemplate(
         title: 'Meeting Notes',
         content: 'Attendees:\n\nAgenda:\n\nAction Items:\n',
-        noteType: 'text',
         icon: Icons.group,
         gradient:
             const LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
@@ -126,7 +125,6 @@ class HomeScreenViewModel extends ChangeNotifier {
       NoteTemplate(
         title: 'Quick Memo',
         content: '', // No content for a voice memo template
-        noteType: 'voice',
         icon: Icons.mic,
         gradient: const LinearGradient(
             colors: [Colors.orange, Colors.deepOrangeAccent]),
@@ -160,7 +158,6 @@ class HomeScreenViewModel extends ChangeNotifier {
                       builder: (context) => CreateNoteScreen(
                         templateTitle: template.title,
                         templateContent: template.content,
-                        templateNoteType: template.noteType,
                       ),
                     ),
                   );
@@ -434,14 +431,12 @@ class HomeScreenViewModel extends ChangeNotifier {
 class NoteTemplate {
   final String title;
   final String content;
-  final String noteType;
   final IconData icon;
   final Gradient gradient;
 
   NoteTemplate({
     required this.title,
     required this.content,
-    required this.noteType,
     required this.icon,
     required this.gradient,
   });

@@ -1,7 +1,9 @@
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/create_note_view_model.dart';
+import 'package:note_taker/widgets/custom_audio_embed_builder.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:note_taker/note_model.dart'; // Import Note model
@@ -34,7 +36,6 @@ class CreateNoteScreen extends StatelessWidget {
       create: (_) => CreateNoteViewModel(
         templateTitle: templateTitle,
         templateContent: templateContent,
-        templateNoteType: templateNoteType,
         note: note, // Pass the note to the ViewModel
       ),
       child: Consumer<CreateNoteViewModel>(
@@ -46,14 +47,60 @@ class CreateNoteScreen extends StatelessWidget {
                 children: [
                   _buildHeader(context, viewModel),
                   Expanded(child: _buildBody(context, viewModel)),
-                  if (!viewModel.showVoiceRecorder)
-                    _buildQuillToolbar(viewModel, context),
+                  if (viewModel.isRecordingUiVisible)
+                    _buildRecordingUi(context, viewModel),
+                  _buildQuillToolbar(viewModel, context),
                   _buildBottomToolbar(context, viewModel),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildRecordingUi(
+      BuildContext context, CreateNoteViewModel viewModel) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          colors: [Colors.purple, Colors.pink],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: viewModel.togglePauseResume,
+            icon: Icon(
+              viewModel.recorderController.recorderState.isPaused
+                  ? Icons.play_arrow
+                  : Icons.pause,
+              color: Colors.white,
+            ),
+          ),
+          AudioWaveforms(
+            size: Size(MediaQuery.of(context).size.width * 0.5, 50),
+            recorderController: viewModel.recorderController,
+            waveStyle: const WaveStyle(
+              waveColor: Colors.white,
+              showDurationLabel: true,
+              spacing: 8.0,
+              durationLinesColor: Colors.white,
+              durationStyle: TextStyle(color: Colors.white),
+            ),
+          ),
+          IconButton(
+            onPressed: () => viewModel.stopRecording(),
+            icon: const Icon(Icons.stop, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
@@ -250,9 +297,7 @@ class CreateNoteScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: viewModel.showVoiceRecorder
-                ? _buildVoiceRecorder(context, viewModel)
-                : _buildTextEditor(viewModel),
+            child: _buildTextEditor(viewModel),
           ),
         ],
       ),
@@ -268,108 +313,31 @@ class CreateNoteScreen extends StatelessWidget {
         ),
         customStyles: quill.DefaultStyles(
           code: quill.DefaultTextBlockStyle(
-            TextStyle(
+            const TextStyle(
               color: Color(0xFFD4D4D4), // VS Code text color
               fontFamily: 'monospace', // Generic monospace font
               fontSize: 14,
             ),
             // Positional argument 2
-            quill.VerticalSpacing(
+            const quill.VerticalSpacing(
                 10, 10), // Positional argument 3 (block spacing)
-            quill.VerticalSpacing(0, 0), // Positional argument 4 (line spacing)
+            const quill.VerticalSpacing(
+                0, 0), // Positional argument 4 (line spacing)
             BoxDecoration(
               // Positional argument 5
-              color: Color(0xFF1E1E1E), // VS Code background color
+              color: const Color(0xFF1E1E1E), // VS Code background color
               borderRadius: BorderRadius.circular(2),
             ),
           ),
         ),
         embedBuilders: [
-                    ...FlutterQuillEmbeds.editorBuilders().where((builder) => builder.key != quill.Attribute.list.key),
+          ...FlutterQuillEmbeds.editorBuilders()
+              .where((builder) => builder.key != quill.Attribute.list.key),
           const CustomTodoEmbedBuilder(),
+          AudioEmbedBuilder(),
         ],
       ),
       focusNode: viewModel.quillFocusNode,
-    );
-  }
-
-  Widget _buildVoiceRecorder(
-      BuildContext context, CreateNoteViewModel viewModel) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (viewModel.isRecording && !viewModel.isPaused)
-          const Text('Recording...',
-              style: TextStyle(color: Colors.red, fontSize: 16)),
-        if (viewModel.isPaused)
-          const Text('Paused',
-              style: TextStyle(color: Colors.orange, fontSize: 16)),
-        if (viewModel.audioPath != null &&
-            !viewModel.isRecording &&
-            !viewModel.isPaused)
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Recording saved!', style: TextStyle(color: Colors.green)),
-            ],
-          ),
-        const SizedBox(height: 40),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Play/Pause/Record Button
-            GestureDetector(
-              onTap: () {
-                if (viewModel.isRecording && !viewModel.isPaused) {
-                  viewModel.pauseRecording();
-                } else if (viewModel.isPaused) {
-                  viewModel.startRecording();
-                } else {
-                  viewModel.startRecording();
-                }
-              },
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: viewModel.isRecording && !viewModel.isPaused
-                      ? Colors.red
-                      : const Color(0xFFFF9500),
-                ),
-                child: Icon(
-                  viewModel.isRecording && !viewModel.isPaused
-                      ? Icons.pause
-                      : Icons.mic,
-                  color: Theme.of(context).iconTheme.color,
-                  size: 50,
-                ),
-              ),
-            ),
-            const SizedBox(width: 20),
-            // Stop Button
-            if (viewModel.isRecording || viewModel.isPaused)
-              GestureDetector(
-                onTap: viewModel.stopRecording,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.grey[700],
-                  ),
-                  child: Icon(
-                    Icons.stop,
-                    color: Theme.of(context).iconTheme.color,
-                    size: 40,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -379,7 +347,7 @@ class CreateNoteScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(
+        border: const Border(
           top: BorderSide(color: Color(0xFF2C2C2E)),
         ),
       ),
@@ -390,8 +358,8 @@ class CreateNoteScreen extends StatelessWidget {
               Icons.check_box_outline_blank, const Color(0xFF34C759), () {
             viewModel.addTodoTemplate();
           }),
-          _buildToolbarButton(Icons.mic, const Color(0xFFFF9500),
-              viewModel.toggleVoiceRecorder),
+          _buildToolbarButton(
+              Icons.mic, const Color(0xFFFF9500), viewModel.toggleRecordingUi),
           _buildToolbarButton(Icons.image, const Color(0xFF0A84FF), () {
             viewModel.insertImage();
           }),
