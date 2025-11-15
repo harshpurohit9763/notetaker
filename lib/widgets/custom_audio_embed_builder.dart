@@ -1,6 +1,6 @@
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
-import 'package:audioplayers/audioplayers.dart';
 
 class AudioEmbedBuilder extends quill.EmbedBuilder {
   @override
@@ -12,8 +12,8 @@ class AudioEmbedBuilder extends quill.EmbedBuilder {
     quill.QuillController controller,
     quill.Embed node,
     bool readOnly,
-    bool inline, // Keep this parameter
-    TextStyle textStyle, // Change DefaultStyles? styles to TextStyle textStyle
+    bool inline,
+    TextStyle textStyle,
   ) {
     return CustomAudioEmbedBuilder(
       node: node,
@@ -38,76 +38,44 @@ class CustomAudioEmbedBuilder extends StatefulWidget {
 }
 
 class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
-  late AudioPlayer _audioPlayer;
-  bool _isPlaying = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+  late PlayerController _playerController;
 
   String? get _audioPath => widget.node.value.data as String?;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AudioPlayer();
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state == PlayerState.playing;
-        });
-      }
-    });
+    _playerController = PlayerController();
+    _preparePlayer();
 
-    _audioPlayer.onDurationChanged.listen((newDuration) {
-      if (mounted) {
-        setState(() {
-          _duration = newDuration;
-        });
-      }
+    _playerController.onPlayerStateChanged.listen((_) {
+      setState(() {});
     });
+  }
 
-    _audioPlayer.onPositionChanged.listen((newPosition) {
-      if (mounted) {
-        setState(() {
-          _position = newPosition;
-        });
-      }
-    });
-
-    _audioPlayer.onPlayerComplete.listen((event) {
-      if (mounted) {
-        setState(() {
-          _position = Duration.zero;
-          _isPlaying = false;
-        });
-      }
-    });
+  void _preparePlayer() async {
+    if (_audioPath != null) {
+      await _playerController.preparePlayer(
+        path: _audioPath!,
+        shouldExtractWaveform: true,
+        noOfSamples: 100, // To generate 100 samples from the audio file
+        volume: 1.0,
+      );
+    }
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    _playerController.dispose();
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    if (_audioPath == null) return;
-
-    if (_isPlaying) {
-      _audioPlayer.pause();
+  void _togglePlayPause() async {
+    if (_playerController.playerState.isPlaying) {
+      await _playerController.pausePlayer();
     } else {
-      if (_position > Duration.zero && _position < _duration) {
-        _audioPlayer.resume();
-      } else {
-        _audioPlayer.play(DeviceFileSource(_audioPath!));
-      }
+      await _playerController.startPlayer();
     }
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
   }
 
   @override
@@ -120,51 +88,38 @@ class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
       padding: const EdgeInsets.all(8.0),
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16.0),
+          border: Border.all(color: Colors.grey.shade800)),
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_fill,
-                  color: Colors.white,
-                  size: 36,
-                ),
-                onPressed: widget.readOnly ? null : _togglePlayPause,
-              ),
-              Expanded(
-                child: Slider(
-                  min: 0,
-                  max: _duration.inSeconds.toDouble(),
-                  value: _position.inSeconds
-                      .toDouble()
-                      .clamp(0.0, _duration.inSeconds.toDouble()),
-                  onChanged: widget.readOnly
-                      ? null
-                      : (value) {
-                          final position = Duration(seconds: value.toInt());
-                          _audioPlayer.seek(position);
-                        },
-                  activeColor: Colors.blue,
-                  inactiveColor: Colors.grey,
-                ),
-              ),
-              Text(
-                '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ],
+          IconButton(
+            icon: Icon(
+              _playerController.playerState.isPlaying
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+            onPressed: widget.readOnly ? null : _togglePlayPause,
           ),
-          Text(
-            _audioPath!.split('/').last, // Display file name
-            style: const TextStyle(color: Colors.grey, fontSize: 10),
-            overflow: TextOverflow.ellipsis,
+          const SizedBox(width: 8),
+          Expanded(
+            child: AudioFileWaveforms(
+              size: const Size(double.infinity, 50.0),
+              playerController: _playerController,
+              enableSeekGesture: true,
+              waveformType: WaveformType.long,
+              playerWaveStyle: PlayerWaveStyle(
+                liveWaveGradient: LinearGradient(colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ]).createShader(
+                  const Rect.fromLTWH(0, 0, 0, 0),
+                ),
+                spacing: 4.0,
+              ),
+            ),
           ),
         ],
       ),
