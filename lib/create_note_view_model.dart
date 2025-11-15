@@ -5,7 +5,7 @@ import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/note_provider.dart';
-import 'package:note_taker/utils/route_manager.dart';
+import 'package:note_taker/routes/route_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';

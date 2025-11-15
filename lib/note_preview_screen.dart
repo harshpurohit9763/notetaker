@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/note_model.dart';
-import 'package:note_taker/utils/route_manager.dart';
+import 'package:note_taker/routes/route_manager.dart';
 
 class NotePreviewScreen extends StatefulWidget {
   final Note note;

@@ -4,7 +4,7 @@ import 'package:note_taker/home_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:note_taker/utils/constant_manager.dart';
-import 'package:note_taker/utils/route_manager.dart';
+import 'package:note_taker/routes/route_manager.dart';
 import 'package:note_taker/utils/theme_manager.dart';
 import 'note_model.dart';
 import 'note_provider.dart';

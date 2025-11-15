@@ -20,7 +20,8 @@ class HomeScreen extends StatelessWidget {
                   viewModel.buildSegmentTabs(),
                   viewModel.buildTemplates(context),
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                     child: Divider(color: Color(0xFF2a2a2a)),
                   ),
                   Expanded(child: viewModel.buildNotesGrid()),

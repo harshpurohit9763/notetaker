@@ -6,10 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:note_taker/create_note_screen.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/note_provider.dart';
-import 'package:note_taker/utils/route_manager.dart';
+import 'package:note_taker/routes/route_manager.dart';
 import 'package:note_taker/widgets/note_action_modal.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
+import 'package:note_taker/routes/note_action_modal_route.dart'; // Import the custom route
 
 class HomeScreenViewModel extends ChangeNotifier {
   Widget buildTopBar() {
@@ -129,21 +130,6 @@ class HomeScreenViewModel extends ChangeNotifier {
         gradient: const LinearGradient(
             colors: [Colors.orange, Colors.deepOrangeAccent]),
       ),
-      NoteTemplate(
-        title: 'To-Do List',
-        content: '- [ ] \n- [ ] \n- [ ] \n',
-        noteType: 'text',
-        icon: Icons.check_box,
-        gradient: const LinearGradient(
-            colors: [Colors.green, Colors.lightGreenAccent]),
-      ),
-      NoteTemplate(
-        title: 'Simple Note',
-        content: '',
-        noteType: 'text',
-        icon: Icons.article,
-        gradient: const LinearGradient(colors: [Colors.purple, Colors.indigo]),
-      ),
     ];
 
     return Column(
@@ -246,50 +232,54 @@ class HomeScreenViewModel extends ChangeNotifier {
         );
       },
       onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return NoteActionModal(
-              note: note,
-              onDismiss: () => Navigator.pop(context),
-            );
-          },
+        Navigator.push(
+          context,
+          NoteActionModalRoute(
+            note: note,
+            heroTag: 'note-modal-${note.id}',
+          ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              note.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Text(
-                note.noteType == 'text' ? (note.content) : 'Voice Note',
-                style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                maxLines: 3,
+      child: Hero(
+        tag: 'note-modal-${note.id}',
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF151515),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                note.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              DateFormat.yMMMd().format(note.lastUpdatedAt ?? note.createdAt ?? DateTime.now()),
-              style: TextStyle(color: Colors.grey[600], fontSize: 10),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Expanded(
+                child: Text(
+                  note.noteType == 'text'
+                      ? _getPlainTextFromDelta(note.content)
+                      : 'Voice Note',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                DateFormat.yMMMd().format(
+                    note.lastUpdatedAt ?? note.createdAt ?? DateTime.now()),
+                style: TextStyle(color: Colors.grey[600], fontSize: 10),
+              ),
+            ],
+          ),
         ),
       ),
     );
