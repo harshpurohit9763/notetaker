@@ -3,6 +3,14 @@ import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:note_taker/create_note_view_model.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+
+extension ColorExtension on Color {
+  String toHex({bool leadingHashSign = true}) => '${leadingHashSign ? '#' : ''}'
+      '${red.toRadixString(16).padLeft(2, '0')}'
+      '${green.toRadixString(16).padLeft(2, '0')}'
+      '${blue.toRadixString(16).padLeft(2, '0')}';
+}
 
 class CreateNoteScreen extends StatelessWidget {
   final String? templateTitle;
@@ -27,15 +35,15 @@ class CreateNoteScreen extends StatelessWidget {
       child: Consumer<CreateNoteViewModel>(
         builder: (context, viewModel, _) {
           return Scaffold(
-            backgroundColor: const Color(0xFF000000),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: SafeArea(
               child: Column(
                 children: [
                   _buildHeader(context, viewModel),
-                  Expanded(child: _buildBody(viewModel)),
+                  Expanded(child: _buildBody(context, viewModel)),
                   if (!viewModel.showVoiceRecorder)
-                    _buildQuillToolbar(viewModel),
-                  _buildBottomToolbar(viewModel),
+                    _buildQuillToolbar(viewModel, context),
+                  _buildBottomToolbar(context, viewModel),
                 ],
               ),
             ),
@@ -45,79 +53,152 @@ class CreateNoteScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuillToolbar(CreateNoteViewModel viewModel) {
-    return quill.QuillToolbar(
-      configurations: const quill.QuillToolbarConfigurations(
-        sharedConfigurations: quill.QuillSharedConfigurations(
-          locale: Locale('en'),
+  Widget _buildQuillToolbar(
+      CreateNoteViewModel viewModel, BuildContext context) {
+    return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue, Colors.orange],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            quill.QuillToolbarHistoryButton(
-              controller: viewModel.quillController,
-              isUndo: true,
+        child: quill.QuillToolbar(
+          configurations: const quill.QuillToolbarConfigurations(
+            sharedConfigurations: quill.QuillSharedConfigurations(
+              locale: Locale('en'),
             ),
-            quill.QuillToolbarHistoryButton(
-              controller: viewModel.quillController,
-              isUndo: false,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                quill.QuillToolbarHistoryButton(
+                  controller: viewModel.quillController,
+                  isUndo: true,
+                ),
+                quill.QuillToolbarHistoryButton(
+                  controller: viewModel.quillController,
+                  isUndo: false,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_bold,
+                  attribute: quill.Attribute.bold,
+                  viewModel: viewModel,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_italic,
+                  attribute: quill.Attribute.italic,
+                  viewModel: viewModel,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_underline,
+                  attribute: quill.Attribute.underline,
+                  viewModel: viewModel,
+                ),
+                quill.QuillToolbarClearFormatButton(
+                  controller: viewModel.quillController,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_strikethrough,
+                  attribute: quill.Attribute.strikeThrough,
+                  viewModel: viewModel,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_list_bulleted,
+                  attribute: quill.Attribute.ul,
+                  viewModel: viewModel,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_list_numbered,
+                  attribute: quill.Attribute.ol,
+                  viewModel: viewModel,
+                ),
+                // Custom Color Picker Button
+                IconButton(
+                  icon: const Icon(Icons.format_color_fill),
+                  color: Theme.of(context)
+                      .iconTheme
+                      .color, // Access context from the build method
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        Color pickerColor = viewModel.quillController
+                                    .getSelectionStyle()
+                                    .attributes[quill.Attribute.background.key]
+                                    ?.value !=
+                                null
+                            ? Color(viewModel.quillController
+                                .getSelectionStyle()
+                                .attributes[quill.Attribute.background.key]!
+                                .value)
+                            : Colors
+                                .black; // Default to black if no background color is set
+
+                        return AlertDialog(
+                          title: const Text('Pick a color!'),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: pickerColor,
+                              onColorChanged: (color) {
+                                pickerColor = color;
+                              },
+                              colorPickerWidth: 300.0,
+                              pickerAreaHeightPercent: 0.7,
+                              enableAlpha: false,
+                              displayThumbColor: true,
+                              paletteType: PaletteType.hueWheel,
+                              labelTypes: const [], // Hide labels
+                              pickerAreaBorderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(2.0),
+                                topRight: Radius.circular(2.0),
+                              ),
+                            ),
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text('Got it'),
+                              onPressed: () {
+                                viewModel.quillController.formatSelection(
+                                  quill.Attribute.fromKeyValue(
+                                      quill.Attribute.background.key,
+                                      pickerColor.toHex()),
+                                );
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.code,
+                  attribute: quill.Attribute.codeBlock,
+                  viewModel: viewModel,
+                ),
+                _CustomQuillToolbarToggleStyleButton(
+                  icon: Icons.format_quote,
+                  attribute: quill.Attribute.blockQuote,
+                  viewModel: viewModel,
+                ),
+                quill.QuillToolbarIndentButton(
+                  controller: viewModel.quillController,
+                  isIncrease: true,
+                ),
+                quill.QuillToolbarIndentButton(
+                  controller: viewModel.quillController,
+                  isIncrease: false,
+                ),
+                quill.QuillToolbarLinkStyleButton(
+                  controller: viewModel.quillController,
+                ),
+              ],
             ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.bold,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.italic,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.underline,
-            ),
-            quill.QuillToolbarClearFormatButton(
-              controller: viewModel.quillController,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.strikeThrough,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.ul,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.ol,
-            ),
-            quill.QuillToolbarColorButton(
-              isBackground: true,
-              controller: viewModel.quillController,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.codeBlock,
-            ),
-            quill.QuillToolbarToggleStyleButton(
-              controller: viewModel.quillController,
-              attribute: quill.Attribute.blockQuote,
-            ),
-            quill.QuillToolbarIndentButton(
-              controller: viewModel.quillController,
-              isIncrease: true,
-            ),
-            quill.QuillToolbarIndentButton(
-              controller: viewModel.quillController,
-              isIncrease: false,
-            ),
-            quill.QuillToolbarLinkStyleButton(
-              controller: viewModel.quillController,
-            ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 
   Widget _buildHeader(BuildContext context, CreateNoteViewModel viewModel) {
@@ -126,8 +207,10 @@ class CreateNoteScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Back Button
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios,
+                color: Theme.of(context).iconTheme.color),
             onPressed: () => Navigator.pop(context),
           ),
           Row(
@@ -144,7 +227,8 @@ class CreateNoteScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
+                icon: Icon(Icons.more_vert,
+                    color: Theme.of(context).iconTheme.color),
                 onPressed: () {
                   // TODO: Implement more options
                 },
@@ -156,28 +240,20 @@ class CreateNoteScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBody(CreateNoteViewModel viewModel) {
+  Widget _buildBody(BuildContext context, CreateNoteViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
-          TextField(
-            controller: viewModel.titleController,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'Title',
-              hintStyle: TextStyle(color: Color(0xFF8E8E93)),
-              border: InputBorder.none,
-            ),
+          _TitleInputField(
+            titleController: viewModel.titleController,
+            titleFocusNode: viewModel.titleFocusNode,
+            onRequestQuillFocus: viewModel.requestQuillFocus,
           ),
           const SizedBox(height: 16),
           Expanded(
             child: viewModel.showVoiceRecorder
-                ? _buildVoiceRecorder(viewModel)
+                ? _buildVoiceRecorder(context, viewModel)
                 : _buildTextEditor(viewModel),
           ),
         ],
@@ -192,11 +268,31 @@ class CreateNoteScreen extends StatelessWidget {
         sharedConfigurations: const quill.QuillSharedConfigurations(
           locale: Locale('en'),
         ),
+        customStyles: quill.DefaultStyles(
+          code: quill.DefaultTextBlockStyle(
+            TextStyle(
+              color: Color(0xFFD4D4D4), // VS Code text color
+              fontFamily: 'monospace', // Generic monospace font
+              fontSize: 14,
+            ),
+            // Positional argument 2
+            quill.VerticalSpacing(
+                10, 10), // Positional argument 3 (block spacing)
+            quill.VerticalSpacing(0, 0), // Positional argument 4 (line spacing)
+            BoxDecoration(
+              // Positional argument 5
+              color: Color(0xFF1E1E1E), // VS Code background color
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
       ),
+      focusNode: viewModel.quillFocusNode,
     );
   }
 
-  Widget _buildVoiceRecorder(CreateNoteViewModel viewModel) {
+  Widget _buildVoiceRecorder(
+      BuildContext context, CreateNoteViewModel viewModel) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -227,7 +323,7 @@ class CreateNoteScreen extends StatelessWidget {
             ),
             child: Icon(
               viewModel.isRecording ? Icons.stop : Icons.mic,
-              color: Colors.white,
+              color: Theme.of(context).iconTheme.color,
               size: 50,
             ),
           ),
@@ -236,11 +332,12 @@ class CreateNoteScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomToolbar(CreateNoteViewModel viewModel) {
+  Widget _buildBottomToolbar(
+      BuildContext context, CreateNoteViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      decoration: const BoxDecoration(
-        color: Color(0xFF000000),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           top: BorderSide(color: Color(0xFF2C2C2E)),
         ),
@@ -257,6 +354,9 @@ class CreateNoteScreen extends StatelessWidget {
           _buildToolbarButton(Icons.image, const Color(0xFF0A84FF), () {
             // TODO: Implement Add Image
           }),
+          _buildToolbarButton(Icons.color_lens, const Color(0xFF0A84FF), () {
+            // TODO: Implement Change Color
+          }),
           _buildToolbarButton(Icons.label, const Color(0xFF8E8E93), () {
             // TODO: Implement Tag/Label
           }),
@@ -270,6 +370,97 @@ class CreateNoteScreen extends StatelessWidget {
     return IconButton(
       icon: Icon(icon, color: color, size: 28),
       onPressed: onPressed,
+    );
+  }
+}
+
+class _TitleInputField extends StatelessWidget {
+  const _TitleInputField({
+    required this.titleController,
+    required this.titleFocusNode,
+    required this.onRequestQuillFocus,
+  });
+
+  final TextEditingController titleController;
+  final FocusNode titleFocusNode;
+  final VoidCallback onRequestQuillFocus;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: titleController,
+      focusNode: titleFocusNode,
+      onSubmitted: (_) => onRequestQuillFocus(),
+      textInputAction: TextInputAction
+          .next, // Indicate that pressing Enter will move to the next input field
+      style: TextStyle(
+        color: Theme.of(context).textTheme.titleLarge?.color,
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+      ),
+      decoration: const InputDecoration(
+        hintText: 'Title',
+        hintStyle: TextStyle(color: Color(0xFF8E8E93)),
+        border: InputBorder.none,
+      ),
+    );
+  }
+}
+
+class _CustomQuillToolbarToggleStyleButton extends StatefulWidget {
+  const _CustomQuillToolbarToggleStyleButton({
+    required this.icon,
+    required this.attribute,
+    required this.viewModel,
+  });
+
+  final IconData icon;
+  final quill.Attribute attribute;
+  final CreateNoteViewModel viewModel;
+
+  @override
+  State<_CustomQuillToolbarToggleStyleButton> createState() =>
+      _CustomQuillToolbarToggleStyleButtonState();
+}
+
+class _CustomQuillToolbarToggleStyleButtonState
+    extends State<_CustomQuillToolbarToggleStyleButton> {
+  int _tapCount = 0;
+  DateTime? _lastTapTime;
+
+  void _handleTap() {
+    final now = DateTime.now();
+    if (_lastTapTime == null ||
+        now.difference(_lastTapTime!) > const Duration(milliseconds: 300)) {
+      _tapCount = 1;
+    } else {
+      _tapCount++;
+    }
+    _lastTapTime = now;
+
+    widget.viewModel.toggleAttribute(widget.attribute, _tapCount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToggled = widget.viewModel.quillController
+        .getSelectionStyle()
+        .attributes
+        .containsKey(widget.attribute.key);
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isToggled ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(3),
+        ),
+        padding: const EdgeInsets.all(8.0),
+        child: Icon(
+          widget.icon,
+          color: Theme.of(context).iconTheme.color,
+          size: 22,
+        ),
+      ),
     );
   }
 }

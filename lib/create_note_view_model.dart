@@ -17,6 +17,10 @@ class CreateNoteViewModel extends ChangeNotifier {
   bool _isRecording = false;
   String? _audioPath;
   bool _showVoiceRecorder = false;
+  quill.Attribute? _lastAppliedAttribute;
+
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _quillFocusNode = FocusNode();
 
   TextEditingController get titleController => _titleController;
   quill.QuillController get quillController => _quillController;
@@ -24,6 +28,8 @@ class CreateNoteViewModel extends ChangeNotifier {
   bool get isRecording => _isRecording;
   String? get audioPath => _audioPath;
   bool get showVoiceRecorder => _showVoiceRecorder;
+  FocusNode get titleFocusNode => _titleFocusNode;
+  FocusNode get quillFocusNode => _quillFocusNode;
 
   CreateNoteViewModel({
     String? templateTitle,
@@ -34,15 +40,23 @@ class CreateNoteViewModel extends ChangeNotifier {
       _titleController.text = templateTitle;
     }
     if (templateContent != null && templateContent.isNotEmpty) {
-      _quillController = quill.QuillController(
-        document: quill.Document.fromJson(
-          jsonDecode(templateContent),
-        ),
-        selection: const TextSelection.collapsed(offset: 0),
-      );
+      try {
+        _quillController = quill.QuillController(
+          document: quill.Document.fromJson(
+            jsonDecode(templateContent),
+          ),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } on FormatException {
+        // Handle malformed JSON by initializing with a basic document
+        _quillController = quill.QuillController.basic();
+      }
     } else {
       _quillController = quill.QuillController.basic();
     }
+    _quillController.addListener(() {
+      notifyListeners();
+    });
     if (templateNoteType != null) {
       _noteType = templateNoteType;
       if (_noteType == 'voice') {
@@ -56,7 +70,29 @@ class CreateNoteViewModel extends ChangeNotifier {
     _titleController.dispose();
     _quillController.dispose();
     _audioRecorder.dispose();
+    _titleFocusNode.dispose();
+    _quillFocusNode.dispose();
     super.dispose();
+  }
+
+  void requestQuillFocus() {
+    _quillFocusNode.requestFocus();
+  }
+
+  void toggleAttribute(quill.Attribute attribute, int tapCount) {
+    if (tapCount == 1) {
+      // Single tap: Toggle the attribute normally
+      _quillController.formatSelection(attribute);
+      _lastAppliedAttribute = attribute;
+    } else if (tapCount == 2) {
+      // Double tap: Remove the attribute
+      _quillController.formatSelection(quill.Attribute.clone(attribute, null));
+    } else if (tapCount == 3) {
+      // Triple tap: Reapply the last applied attribute
+      if (_lastAppliedAttribute != null) {
+        _quillController.formatSelection(_lastAppliedAttribute!);
+      }
+    }
   }
 
   Future<void> startRecording() async {
