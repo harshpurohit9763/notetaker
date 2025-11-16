@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:note_taker/home_screen.dart';
 import 'package:note_taker/reminder_model.dart';
 import 'package:note_taker/reminder_provider.dart';
+import 'package:note_taker/services/notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:note_taker/utils/constant_manager.dart';
@@ -13,6 +14,7 @@ import 'note_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   final appDocumentDir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(appDocumentDir.path);
   Hive.registerAdapter(NoteAdapter());

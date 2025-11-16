@@ -16,7 +16,7 @@ class RouteManager {
 
     switch (settings.name) {
       case homeScreen:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(builder: (_) => const HomeScreenWrapper());
       case createNoteScreen:
         final args = settings.arguments;
         if (args is Note) {

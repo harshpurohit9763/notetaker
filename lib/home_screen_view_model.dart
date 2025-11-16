@@ -8,15 +8,23 @@ import 'package:note_taker/create_note_screen.dart';
 import 'package:note_taker/create_reminder_screen.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/note_provider.dart';
+import 'package:note_taker/reminder_model.dart';
+import 'package:note_taker/reminder_provider.dart';
 import 'package:note_taker/routes/route_manager.dart';
 import 'package:note_taker/widgets/note_action_modal.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:note_taker/widgets/reminder_roller.dart';
 import 'package:provider/provider.dart';
 import 'package:note_taker/routes/note_action_modal_route.dart'; // Import the custom route
 
 class HomeScreenViewModel extends ChangeNotifier {
   int _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
+
+  Reminder? rollerReminder;
+  bool showRoller = false;
+  bool isRollerExpanded = false;
+  RollerDirection rollerDirection = RollerDirection.right;
 
   void onTabTapped(int index) {
     _selectedIndex = index;
@@ -43,6 +51,47 @@ class HomeScreenViewModel extends ChangeNotifier {
     }
   }
 
+  void checkDueReminders(BuildContext context) {
+    final reminderProvider =
+        Provider.of<ReminderProvider>(context, listen: false);
+    final dueReminders = reminderProvider.getDueLowPriorityReminders();
+    if (dueReminders.isNotEmpty) {
+      // Show one by one
+      displayRoller(dueReminders.first);
+      reminderProvider.disableReminder(dueReminders.first);
+    }
+  }
+
+  void displayRoller(Reminder reminder) {
+    final direction = (_selectedIndex == 0 || _selectedIndex == 1)
+        ? RollerDirection.right
+        : RollerDirection.left;
+
+    rollerReminder = reminder;
+    rollerDirection = direction;
+    showRoller = true;
+    isRollerExpanded = true;
+    notifyListeners();
+
+    Future.delayed(const Duration(seconds: 4), () {
+      if (showRoller) { // Only collapse if it's still shown
+        isRollerExpanded = false;
+        notifyListeners();
+      }
+    });
+  }
+
+  void expandRoller() {
+    isRollerExpanded = true;
+    notifyListeners();
+  }
+
+  void hideRoller() {
+    showRoller = false;
+    isRollerExpanded = false;
+    notifyListeners();
+  }
+
   Widget buildTopBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -63,7 +112,7 @@ class HomeScreenViewModel extends ChangeNotifier {
               style: TextStyle(fontSize: 22, fontFamily: 'Inter'),
               children: [
                 TextSpan(
-                  text: 'Matterics ',
+                  text: 'Add ',
                   style: TextStyle(fontWeight: FontWeight.w300),
                 ),
                 TextSpan(
@@ -359,7 +408,8 @@ class HomeScreenViewModel extends ChangeNotifier {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavBarItem(Icons.home, 'Home', 0),
-              _buildNavBarItem(Icons.notifications_active_outlined, 'Reminders', 1),
+              _buildNavBarItem(
+                  Icons.notifications_active_outlined, 'Reminders', 1),
               const SizedBox(width: 40), // Placeholder for FAB
               _buildNavBarItem(Icons.calendar_today, 'Calendar', 2),
               _buildNavBarItem(Icons.person, 'Profile', 3),

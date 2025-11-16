@@ -9,7 +9,8 @@ import 'package:note_taker/reminder_provider.dart';
 import 'package:provider/provider.dart';
 
 class RemindersScreen extends StatefulWidget {
-  const RemindersScreen({super.key});
+  final String? highlightedReminderId;
+  const RemindersScreen({super.key, this.highlightedReminderId});
 
   @override
   _RemindersScreenState createState() => _RemindersScreenState();
@@ -17,12 +18,28 @@ class RemindersScreen extends StatefulWidget {
 
 class _RemindersScreenState extends State<RemindersScreen> {
   int _selectedSegment = 0; // 0 for Upcoming, 1 for Completed
+  String? _highlightedId;
 
   static const Color appGray = Color(0xFF1C1C1E);
   static const Color appGrayLight = Color(0xFF2C2C2E);
   static const Color appBlue = Color(0xFF0A84FF);
   static const Color appGrayText = Color(0xFF8E8E93);
   static const Color appGreen = Color(0xFF34C759);
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightedId = widget.highlightedReminderId;
+    if (_highlightedId != null) {
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _highlightedId = null;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +220,10 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Widget _buildReminderItem(Reminder reminder) {
-    final bgColor = reminder.color != null ? Color(reminder.color!) : appGray;
+    final isHighlighted = reminder.id == _highlightedId;
+    final bgColor = isHighlighted
+        ? appBlue.withOpacity(0.5)
+        : (reminder.color != null ? Color(reminder.color!) : appGray);
     final textColor = _getContrastingTextColor(bgColor);
     final subtleTextColor = textColor.withOpacity(0.7);
 
@@ -224,7 +244,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: _buildCheckbox(reminder),
         title: Text(
-          reminder.notes,
+          reminder.notes.isNotEmpty ? reminder.notes : 'Untitled Reminder',
           style: TextStyle(
             color: reminder.isCompleted ? appGrayText : textColor,
             decoration:
