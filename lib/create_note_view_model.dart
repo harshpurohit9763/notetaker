@@ -119,7 +119,7 @@ class CreateNoteViewModel extends ChangeNotifier {
   Future<void> startRecording() async {
     final hasPermission = await _recorderController.checkPermission();
     if (hasPermission) {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await getApplicationSupportDirectory();
       final path =
           '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
       await _recorderController.record(path: path);
