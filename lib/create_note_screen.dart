@@ -166,7 +166,7 @@ class CreateNoteScreen extends StatelessWidget {
                   attribute: quill.Attribute.ol,
                   viewModel: viewModel,
                 ),
-                // Custom Color Picker Button
+                // Custom Background Color Picker Button
                 IconButton(
                   icon: const Icon(Icons.format_color_fill),
                   color: Theme.of(context)
@@ -176,20 +176,19 @@ class CreateNoteScreen extends StatelessWidget {
                     showDialog(
                       context: context,
                       builder: (BuildContext context) {
-                        Color pickerColor = viewModel.quillController
-                                    .getSelectionStyle()
-                                    .attributes[quill.Attribute.background.key]
-                                    ?.value !=
-                                null
-                            ? Color(viewModel.quillController
-                                .getSelectionStyle()
-                                .attributes[quill.Attribute.background.key]!
-                                .value)
-                            : Colors
-                                .black; // Default to black if no background color is set
+                        final currentBackgroundColor = viewModel.quillController
+                            .getSelectionStyle()
+                            .attributes[quill.Attribute.background.key]
+                            ?.value;
+                        Color pickerColor = Colors.black;
+                        if (currentBackgroundColor is String && currentBackgroundColor.startsWith('#')) {
+                            try {
+                                pickerColor = Color(int.parse(currentBackgroundColor.replaceFirst('#', '0xFF'), radix: 16));
+                            } catch (e) { /* fallback to black */ }
+                        }
 
                         return AlertDialog(
-                          title: const Text('Pick a color!'),
+                          title: const Text('Pick a background color!'),
                           content: SingleChildScrollView(
                             child: ColorPicker(
                               pickerColor: pickerColor,
@@ -215,6 +214,65 @@ class CreateNoteScreen extends StatelessWidget {
                                 viewModel.quillController.formatSelection(
                                   quill.Attribute.fromKeyValue(
                                       quill.Attribute.background.key,
+                                      pickerColor.toHex()),
+                                );
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+                // Custom Font Color Picker Button
+                IconButton(
+                  icon: const Icon(Icons.format_color_text),
+                  color: Theme.of(context)
+                      .iconTheme
+                      .color, // Access context from the build method
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        final currentFontColor = viewModel.quillController
+                            .getSelectionStyle()
+                            .attributes[quill.Attribute.color.key]
+                            ?.value;
+                        Color pickerColor = Colors.black;
+                        if (currentFontColor is String && currentFontColor.startsWith('#')) {
+                            try {
+                                pickerColor = Color(int.parse(currentFontColor.replaceFirst('#', '0xFF'), radix: 16));
+                            } catch (e) { /* fallback to black */ }
+                        }
+
+                        return AlertDialog(
+                          title: const Text('Pick a font color!'),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: pickerColor,
+                              onColorChanged: (color) {
+                                pickerColor = color;
+                              },
+                              colorPickerWidth: 300.0,
+                              pickerAreaHeightPercent: 0.7,
+                              enableAlpha: false,
+                              displayThumbColor: true,
+                              paletteType: PaletteType.hueWheel,
+                              labelTypes: const [], // Hide labels
+                              pickerAreaBorderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(2.0),
+                                topRight: Radius.circular(2.0),
+                              ),
+                            ),
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text('Got it'),
+                              onPressed: () {
+                                viewModel.quillController.formatSelection(
+                                  quill.Attribute.fromKeyValue(
+                                      quill.Attribute.color.key,
                                       pickerColor.toHex()),
                                 );
                                 Navigator.of(context).pop();

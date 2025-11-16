@@ -39,6 +39,8 @@ class CustomAudioEmbedBuilder extends StatefulWidget {
 
 class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
   late PlayerController _playerController;
+  Duration _currentDuration = Duration.zero;
+  Duration _maxDuration = Duration.zero;
 
   String? get _audioPath => widget.node.value.data as String?;
 
@@ -49,7 +51,14 @@ class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
     _preparePlayer();
 
     _playerController.onPlayerStateChanged.listen((_) {
-      setState(() {});
+      if (mounted) setState(() {});
+    });
+    _playerController.onCurrentDurationChanged.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _currentDuration = Duration(milliseconds: duration);
+        });
+      }
     });
   }
 
@@ -61,6 +70,11 @@ class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
         noOfSamples: 100, // To generate 100 samples from the audio file
         volume: 1.0,
       );
+      if (mounted) {
+        setState(() {
+          _maxDuration = Duration(milliseconds: _playerController.maxDuration);
+        });
+      }
     }
   }
 
@@ -78,50 +92,92 @@ class _CustomAudioEmbedBuilderState extends State<CustomAudioEmbedBuilder> {
     }
   }
 
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_audioPath == null || _audioPath!.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(color: Colors.grey.shade800)),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              _playerController.playerState.isPlaying
-                  ? Icons.pause_rounded
-                  : Icons.play_arrow_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-            onPressed: widget.readOnly ? null : _togglePlayPause,
+    const appGray = Color(0xFF1C1C1E);
+    const appBlue = Color(0xFF0A84FF);
+    const appGrayText = Color(0xFF8E8E93);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Container(
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: appGray,
+            borderRadius: BorderRadius.circular(12.0),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: AudioFileWaveforms(
-              size: const Size(double.infinity, 50.0),
-              playerController: _playerController,
-              enableSeekGesture: true,
-              waveformType: WaveformType.long,
-              playerWaveStyle: PlayerWaveStyle(
-                liveWaveGradient: LinearGradient(colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ]).createShader(
-                  const Rect.fromLTWH(0, 0, 0, 0),
+          child: Row(
+            children: [
+              // Play/Pause Button
+              Container(
+                decoration: const BoxDecoration(
+                  color: appBlue,
+                  shape: BoxShape.circle,
                 ),
-                spacing: 4.0,
+                child: IconButton(
+                  icon: Icon(
+                    _playerController.playerState.isStopped || _playerController.playerState.isPaused
+                        ? Icons.play_arrow
+                        : Icons.pause,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  onPressed: widget.readOnly ? null : _togglePlayPause,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              // Waveform and Time
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Time
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _formatDuration(_currentDuration),
+                          style: const TextStyle(color: appGrayText, fontSize: 12),
+                        ),
+                        Text(
+                          _formatDuration(_maxDuration),
+                          style: const TextStyle(color: appGrayText, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    // Waveform
+                    AudioFileWaveforms(
+                      size: const Size(double.infinity, 30.0),
+                      playerController: _playerController,
+                      enableSeekGesture: true,
+                      waveformType: WaveformType.long,
+                      playerWaveStyle: const PlayerWaveStyle(
+                        fixedWaveColor: appGrayText,
+                        liveWaveColor: appBlue,
+                        spacing: 3.0,
+                        waveThickness: 2.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
