@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/create_note_screen.dart';
+import 'package:note_taker/create_reminder_screen.dart';
 import 'package:note_taker/note_model.dart';
 import 'package:note_taker/note_provider.dart';
 import 'package:note_taker/routes/route_manager.dart';
@@ -14,6 +15,34 @@ import 'package:provider/provider.dart';
 import 'package:note_taker/routes/note_action_modal_route.dart'; // Import the custom route
 
 class HomeScreenViewModel extends ChangeNotifier {
+  int _selectedIndex = 0;
+  int get selectedIndex => _selectedIndex;
+
+  void onTabTapped(int index) {
+    _selectedIndex = index;
+    notifyListeners();
+  }
+
+  void fabTapped(BuildContext context) {
+    if (_selectedIndex == 0) {
+      // Home/Notes
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CreateNoteScreen(),
+        ),
+      );
+    } else if (_selectedIndex == 1) {
+      // Reminders
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CreateReminderScreen(),
+        ),
+      );
+    }
+  }
+
   Widget buildTopBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -329,11 +358,11 @@ class HomeScreenViewModel extends ChangeNotifier {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              buildNavBarItem(Icons.home, 'Home', isSelected: true),
-              buildNavBarItem(Icons.note_alt, 'Notes'),
+              _buildNavBarItem(Icons.home, 'Home', 0),
+              _buildNavBarItem(Icons.notifications_active_outlined, 'Reminders', 1),
               const SizedBox(width: 40), // Placeholder for FAB
-              buildNavBarItem(Icons.calendar_today, 'Calendar'),
-              buildNavBarItem(Icons.person, 'Profile'),
+              _buildNavBarItem(Icons.calendar_today, 'Calendar', 2),
+              _buildNavBarItem(Icons.person, 'Profile', 3),
             ],
           ),
           Positioned(
@@ -342,14 +371,7 @@ class HomeScreenViewModel extends ChangeNotifier {
             child: GestureDetector(
               behavior:
                   HitTestBehavior.opaque, // Ensure the entire area is tappable
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateNoteScreen(),
-                  ),
-                );
-              },
+              onTap: () => fabTapped(context),
               child: Container(
                 width: 60,
                 height: 60,
@@ -377,24 +399,25 @@ class HomeScreenViewModel extends ChangeNotifier {
     );
   }
 
-  Widget buildNavBarItem(
-    IconData icon,
-    String label, {
-    bool isSelected = false,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: isSelected ? Colors.white : Colors.grey),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontSize: 12,
+  Widget _buildNavBarItem(IconData icon, String label, int index) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => onTabTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: isSelected ? Colors.white : Colors.grey),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey,
+              fontSize: 12,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
