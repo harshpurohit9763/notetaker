@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final List<Widget> screens = [
       _buildNotesView(context, viewModel),
-      RemindersScreen(highlightedReminderId: viewModel.rollerReminder?.id),
+      RemindersScreen(highlightedReminderId: viewModel.tappedReminderId),
       const Center(
           child: Text('Calendar Screen',
               style: TextStyle(color: Colors.white))), // Placeholder
@@ -56,37 +56,50 @@ class _HomeScreenState extends State<HomeScreen> {
               index: viewModel.selectedIndex,
               children: screens,
             ),
-            Align(
-              alignment: viewModel.rollerDirection == RollerDirection.right
-                  ? Alignment.centerRight
-                  : Alignment.centerLeft,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-                transform: Matrix4.translationValues(
-                  viewModel.showRoller
-                      ? 0
-                      : (viewModel.rollerDirection == RollerDirection.right
-                          ? 300
-                          : -300),
-                  0,
-                  0,
-                ),
-                child: viewModel.rollerReminder != null
-                    ? ReminderRoller(
-                        reminder: viewModel.rollerReminder!,
-                        direction: viewModel.rollerDirection,
-                        isExpanded: viewModel.isRollerExpanded,
-                        onTap: () {
-                          viewModel.onTabTapped(1); // Go to reminders tab
-                          viewModel.hideRoller();
-                        },
-                        onExpand: () {
-                          viewModel.expandRoller();
-                        },
-                      )
-                    : const SizedBox.shrink(),
-              ),
+            Consumer<HomeScreenViewModel>(
+              builder: (context, viewModel, child) {
+                if (viewModel.activeRollerReminders.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                final screenWidth = MediaQuery.of(context).size.width;
+                final expandedWidth = screenWidth * 0.40; // 40% of screen width
+                final minimizedWidth = screenWidth * 0.08; // 8% of screen width
+
+                return Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: expandedWidth,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics:
+                          const NeverScrollableScrollPhysics(), // Optional: prevents scroll if few items
+                      itemCount: viewModel.activeRollerReminders.length,
+                      itemBuilder: (context, index) {
+                        final reminder = viewModel.activeRollerReminders[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: ReminderRoller(
+                              reminder: reminder,
+                              direction: RollerDirection.right,
+                              expandedWidth: expandedWidth,
+                              minimizedWidth: minimizedWidth,
+                              onTap: () {
+                                viewModel.setTappedReminderId(reminder.id);
+                                viewModel.onTabTapped(1);
+                                viewModel.disableReminderAndRemoveFromRoller(
+                                    context, reminder);
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -95,8 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNotesView(
-      BuildContext context, HomeScreenViewModel viewModel) {
+  Widget _buildNotesView(BuildContext context, HomeScreenViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

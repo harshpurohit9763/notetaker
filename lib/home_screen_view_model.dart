@@ -21,13 +21,41 @@ class HomeScreenViewModel extends ChangeNotifier {
   int _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
 
-  Reminder? rollerReminder;
-  bool showRoller = false;
-  bool isRollerExpanded = false;
-  RollerDirection rollerDirection = RollerDirection.right;
+  List<Reminder> activeRollerReminders = [];
+  String? _tappedReminderId; // To keep track of the reminder that was tapped and led to navigation
+
+  String? get tappedReminderId => _tappedReminderId;
 
   void onTabTapped(int index) {
     _selectedIndex = index;
+    if (index == 1) { // If navigating to Reminders screen
+      _tappedReminderId = null; // Clear any previously tapped reminder
+    }
+    notifyListeners();
+  }
+
+  void addReminderToRoller(Reminder reminder) {
+    if (!activeRollerReminders.any((r) => r.id == reminder.id)) {
+      activeRollerReminders.add(reminder);
+      notifyListeners();
+    }
+  }
+
+  void removeReminderFromRoller(String reminderId) {
+    activeRollerReminders.removeWhere((reminder) => reminder.id == reminderId);
+    notifyListeners();
+  }
+
+  void setTappedReminderId(String? reminderId) {
+    _tappedReminderId = reminderId;
+    notifyListeners();
+  }
+
+  void disableReminderAndRemoveFromRoller(BuildContext context, Reminder reminder) {
+    final reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    reminder.isEnabled = false;
+    reminderProvider.updateReminder(reminder); // Persist the change
+    activeRollerReminders.removeWhere((r) => r.id == reminder.id);
     notifyListeners();
   }
 
@@ -55,42 +83,15 @@ class HomeScreenViewModel extends ChangeNotifier {
     final reminderProvider =
         Provider.of<ReminderProvider>(context, listen: false);
     final dueReminders = reminderProvider.getDueLowPriorityReminders();
-    if (dueReminders.isNotEmpty) {
-      // Show one by one
-      displayRoller(dueReminders.first);
-      reminderProvider.disableReminder(dueReminders.first);
-    }
-  }
-
-  void displayRoller(Reminder reminder) {
-    final direction = (_selectedIndex == 0 || _selectedIndex == 1)
-        ? RollerDirection.right
-        : RollerDirection.left;
-
-    rollerReminder = reminder;
-    rollerDirection = direction;
-    showRoller = true;
-    isRollerExpanded = true;
-    notifyListeners();
-
-    Future.delayed(const Duration(seconds: 4), () {
-      if (showRoller) { // Only collapse if it's still shown
-        isRollerExpanded = false;
-        notifyListeners();
+    for (var reminder in dueReminders) {
+      if (!activeRollerReminders.any((r) => r.id == reminder.id)) {
+        activeRollerReminders.add(reminder);
       }
-    });
-  }
-
-  void expandRoller() {
-    isRollerExpanded = true;
+    }
     notifyListeners();
   }
 
-  void hideRoller() {
-    showRoller = false;
-    isRollerExpanded = false;
-    notifyListeners();
-  }
+
 
   Widget buildTopBar() {
     return Padding(
