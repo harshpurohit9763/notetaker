@@ -33,4 +33,7 @@ class Reminder extends HiveObject {
 
   @HiveField(9)
   String? tone;
+
+  @HiveField(10)
+  String? linkedNoteId;
 }

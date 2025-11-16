@@ -2,6 +2,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:note_taker/link_note_screen.dart';
+import 'package:note_taker/note_model.dart';
+import 'package:note_taker/note_provider.dart';
 import 'package:note_taker/reminder_model.dart';
 import 'package:note_taker/reminder_provider.dart';
 import 'package:note_taker/utils/assets_manager.dart';
@@ -25,6 +28,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   late final TextEditingController _notesController;
   int? _selectedColorValue;
   String? _selectedTone;
+  String? _linkedNoteId;
+  String? _linkedNoteTitle;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -60,6 +65,14 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
       _notesController = TextEditingController(text: reminder.notes);
       _selectedColorValue = reminder.color;
       _selectedTone = reminder.tone;
+      _linkedNoteId = reminder.linkedNoteId;
+      if (_linkedNoteId != null) {
+        // Fetch note title
+        final note = Provider.of<NoteProvider>(context, listen: false)
+            .notes
+            .firstWhere((n) => n.id == _linkedNoteId, orElse: () => Note());
+        _linkedNoteTitle = note.title;
+      }
     } else {
       _dateEnabled = true;
       _priority = 1;
@@ -69,6 +82,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
       _notesController = TextEditingController();
       _selectedColorValue = null;
       _selectedTone = AssetsManager.notificationTones.keys.first;
+      _linkedNoteId = null;
+      _linkedNoteTitle = null;
     }
   }
 
@@ -178,6 +193,20 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
     );
   }
 
+  Future<void> _linkNote() async {
+    final selectedNote = await Navigator.push<Note>(
+      context,
+      MaterialPageRoute(builder: (context) => const LinkNoteScreen()),
+    );
+
+    if (selectedNote != null) {
+      setState(() {
+        _linkedNoteId = selectedNote.id;
+        _linkedNoteTitle = selectedNote.title;
+      });
+    }
+  }
+
   String _getPriorityDescription() {
     switch (_priority) {
       case 0:
@@ -211,6 +240,7 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
       reminder.isEnabled = _dateEnabled;
       reminder.color = _selectedColorValue;
       reminder.tone = _selectedTone;
+      reminder.linkedNoteId = _linkedNoteId;
       Provider.of<ReminderProvider>(context, listen: false)
           .updateReminder(reminder);
     } else {
@@ -222,7 +252,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
         ..priority = _priority
         ..isEnabled = _dateEnabled
         ..color = _selectedColorValue
-        ..tone = _selectedTone;
+        ..tone = _selectedTone
+        ..linkedNoteId = _linkedNoteId;
       Provider.of<ReminderProvider>(context, listen: false)
           .addReminder(newReminder);
     }
@@ -275,6 +306,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
             _buildPrioritySection(),
             const SizedBox(height: 24),
             _buildColorSection(),
+            const SizedBox(height: 24),
+            _buildLinkNoteSection(),
             const SizedBox(height: 24),
             _buildNotesSection(),
           ],
@@ -517,6 +550,37 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLinkNoteSection() {
+    return GestureDetector(
+      onTap: _linkNote,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: appGray,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Link Note',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                Text(_linkedNoteTitle ?? 'None',
+                    style: const TextStyle(color: appGrayText, fontSize: 16)),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: appGrayText),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

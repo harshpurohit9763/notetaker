@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:note_taker/create_reminder_screen.dart';
+import 'package:note_taker/note_provider.dart';
 import 'package:note_taker/reminder_model.dart';
 import 'package:note_taker/reminder_provider.dart';
 import 'package:provider/provider.dart';
@@ -206,6 +207,17 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final textColor = _getContrastingTextColor(bgColor);
     final subtleTextColor = textColor.withOpacity(0.7);
 
+    final noteProvider = Provider.of<NoteProvider>(context, listen: false);
+    String? linkedNoteTitle;
+    if (reminder.linkedNoteId != null) {
+      try {
+        final note = noteProvider.notes.firstWhere((n) => n.id == reminder.linkedNoteId);
+        linkedNoteTitle = note.title;
+      } catch (e) {
+        // Note not found
+      }
+    }
+
     return Container(
       color: bgColor,
       child: ListTile(
@@ -219,10 +231,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
                 reminder.isCompleted ? TextDecoration.lineThrough : null,
           ),
         ),
-        subtitle: Text(
-          'From: Meeting Notes', // Mock data
-          style: TextStyle(color: reminder.isCompleted ? appGrayText : subtleTextColor, fontSize: 12),
-        ),
+        subtitle: linkedNoteTitle != null
+            ? Align(
+                alignment: Alignment.centerLeft,
+                child: _buildLinkCapsule(linkedNoteTitle, bgColor),
+              )
+            : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -266,6 +280,32 @@ class _RemindersScreenState extends State<RemindersScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Color _darken(Color color, [double amount = .1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(color);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
+  }
+
+  Widget _buildLinkCapsule(String noteTitle, Color backgroundColor) {
+    final capsuleColor = _darken(backgroundColor, 0.2);
+    final textColor = _getContrastingTextColor(capsuleColor);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: capsuleColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'From: $noteTitle',
+        style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w500),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

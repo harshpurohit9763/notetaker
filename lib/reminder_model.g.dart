@@ -24,13 +24,16 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       ..priority = fields[4] as int
       ..isEnabled = fields[5] as bool
       ..createdAt = fields[6] as DateTime
-      ..isCompleted = fields[7] as bool;
+      ..isCompleted = fields[7] as bool
+      ..color = fields[8] as int?
+      ..tone = fields[9] as String?
+      ..linkedNoteId = fields[10] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Reminder obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -46,7 +49,13 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       ..writeByte(6)
       ..write(obj.createdAt)
       ..writeByte(7)
-      ..write(obj.isCompleted);
+      ..write(obj.isCompleted)
+      ..writeByte(8)
+      ..write(obj.color)
+      ..writeByte(9)
+      ..write(obj.tone)
+      ..writeByte(10)
+      ..write(obj.linkedNoteId);
   }
 
   @override
