@@ -180,11 +180,11 @@ class CreateNoteScreen extends StatelessWidget {
                             .getSelectionStyle()
                             .attributes[quill.Attribute.background.key]
                             ?.value;
-                        Color pickerColor = Colors.black;
+                        Color pickerColor = Colors.red;
                         if (currentBackgroundColor is String && currentBackgroundColor.startsWith('#')) {
                             try {
                                 pickerColor = Color(int.parse(currentBackgroundColor.replaceFirst('#', '0xFF'), radix: 16));
-                            } catch (e) { /* fallback to black */ }
+                            } catch (e) { /* fallback to red */ }
                         }
 
                         return AlertDialog(
@@ -239,11 +239,11 @@ class CreateNoteScreen extends StatelessWidget {
                             .getSelectionStyle()
                             .attributes[quill.Attribute.color.key]
                             ?.value;
-                        Color pickerColor = Colors.black;
+                        Color pickerColor = Colors.red;
                         if (currentFontColor is String && currentFontColor.startsWith('#')) {
                             try {
                                 pickerColor = Color(int.parse(currentFontColor.replaceFirst('#', '0xFF'), radix: 16));
-                            } catch (e) { /* fallback to black */ }
+                            } catch (e) { /* fallback to red */ }
                         }
 
                         return AlertDialog(

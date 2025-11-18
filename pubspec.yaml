@@ -26,6 +26,7 @@ dependencies:
   fluttertoast: ^8.2.4
   timezone: ^0.10.1
   flutter_local_notifications: ^19.5.0
+  talker: ^5.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
